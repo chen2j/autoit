@@ -3,50 +3,39 @@
 #PRE_Outfile=微云离线助手.exe
 #PRE_UseX64=n
 #PRE_Res_Comment=通过Autoit实现自动添加微云离线下载
-#PRE_Res_Fileversion=1.2.5.21
+#PRE_Res_Fileversion=1.2.5.12
 #PRE_Res_Fileversion_AutoIncrement=y
 #PRE_Res_requestedExecutionLevel=None
 #EndRegion ;**** 参数创建于 ACNWrapper_GUI ****
 _MyProExists()
 
 HotKeySet("^w", "loop")
-HotKeySet("{Esc}", "exitit")
-Global $dir = @TempDir & "\links-for-weiyun-download.txt"
+HotKeySet("{Esc}", "Terminate")
+Global $dir=@TempDir & "\links-for-weiyun-download.txt"
 Global $file = FileOpen($dir, 9)
 Global $count = 0
 Func Terminate()
-	FileClose($file)
-	Sleep(100)
-	FileDelete($dir)
-	WinClose("腾讯微云")
-	WinClose("离线下载")
-	WinClose("提示")
-EndFunc   ;==>Terminate
-
-Func exitit()
-	FileClose($file)
-	Sleep(100)
-	FileDelete($dir)
-	WinClose("腾讯微云")
-	WinClose("离线下载")
-	WinClose("提示")
 	TrayTip("提示", "微云离线下载小程序已退出！", 5, 1)
+	FileClose($file)
+	Sleep(500)
+	FileDelete($dir)
+	WinClose("腾讯微云")
+	WinClose("离线下载")
+	WinClose("提示")
 	Exit
 EndFunc   ;==>Terminate
 
 Opt("TrayMenuMode", 3) ; 默认托盘菜单项目(脚本已暂停/退出脚本) (Script Paused/Exit) 将不显示.
 
-Local $start = TrayCreateItem("开始离线下载（Ctrl+D）")
+$start = TrayCreateItem("开始离线下载（Ctrl+D）")
 TrayCreateItem("")
-Local $shuliang = TrayCreateMenu("链接数：" & $count)
-	Local $qingling = TrayCreateItem("点击清零", $shuliang)
-	Local $open = TrayCreateItem("打开文件", $shuliang)
+$shuliang = TrayCreateItem("待离线下载链接数：0")
 TrayCreateItem("")
-Local $about = TrayCreateItem("关于本软件")
+$about = TrayCreateItem("关于本软件")
 TrayCreateItem("")
-Local $homepage = TrayCreateItem("访问官网")
+$homepage = TrayCreateItem("访问官网")
 TrayCreateItem("")
-Local $exititem = TrayCreateItem("退出")
+$exititem = TrayCreateItem("退出")
 
 TraySetToolTip("微云离线下载小工具") ; 鼠标移动到托盘显示的提示。
 TraySetClick(8) ;右键才会显示菜单
@@ -69,20 +58,14 @@ While 1
 		Case $msg = $homepage
 			ShellExecute("http://www.jemch.com", "", "", "", @SW_MAXIMIZE)
 		Case $msg = $exititem
-			exitit()
+			Exit
 		Case $msg = $start
 			loop()
-		Case $msg = $qingling
-			$count = 0
-			TrayItemSetText($shuliang, "链接数：" & $count)
-			TrayTip("提示", "所有链接已清除！", 5, 1)
-			FileDelete($dir)
-			Sleep(500)
-			$file = FileOpen($dir, 9)
-		Case $msg = $open
-			ShellExecute($dir)
-		;Case $msg = $TRAY_EVENT_PRIMARYDOUBLE
-		;	GUISetState(@SW_SHOW, $Form1)
+		Case $msg = $shuliang
+			$shuliang=0
+			
+			;Case $msg = $TRAY_EVENT_PRIMARYDOUBLE
+			;	GUISetState(@SW_SHOW, $Form1)
 	EndSelect
 	;-------------------------------------------------------------结束托盘设置
 	
@@ -93,37 +76,35 @@ Func shouji()
 	FileWriteLine($file, ClipGet())
 	FileClose($file)
 	$count = $count + 1
-	TrayTip("提示", "检测到电驴或磁力链接，共为您收集到" & $count & "个链接。", 5, 1)
-	TrayItemSetText($shuliang, "待离线下载链接数：" & $count)
+	TrayTip("提示", "检测到电驴或磁力链接，共为您收集到"&$count&"个链接。", 5, 1)
+	TrayItemSetText($shuliang, "待离线下载链接数：" & $count &"，点击可清理为0")
 	ClipPut("")
 EndFunc   ;==>shouji
 
 Func loop()
-	TrayTip("提示", "开始添加"&$count&"个链接到微云，请勿移动鼠标或键盘！", 5, 2)
+	TrayTip("提示", "开始添加链接到微云，请勿移动鼠标或键盘！", 5, 2)
 	$file = FileOpen($dir, 0)
 	While 1
 		Local $line = FileReadLine($file)
 		If @error = -1 Then
-			If $count = 0 Then
+			If $count=0 Then
 				TrayTip("提示", "还没有复制任何下载链接，请添加后重试！", 5, 2)
 				ExitLoop
 			EndIf
-			TrayTip("提示","已完成尝试为" &$count & "个链接添加到微云离线下载！", 5, 1)
-			ClipPut("")
+			TrayTip("提示", $count & "个链接已添加到微云离线下载！", 5, 1)
 			Terminate()
-			ExitLoop
 		EndIf
 		ClipPut($line)
 		weiyun()
+
 	WEnd
-	$count = 0
 EndFunc   ;==>loop
 
 Func weiyun()
 	Local $iPID = Run("C:\Program Files (x86)\Tencent\weiyundisk\WeiyunDisk\WeiyunDisk\Bin\wydrive.exe", "", @SW_MAXIMIZE)
 	WinWait("腾讯微云", "", 10)
 	BlockInput(1)
-	Sleep(500)
+	Sleep(1000)
 	Local $size = WinGetPos("腾讯微云")
 	MouseMove($size[0] + 100, $size[1] + 110)
 	Sleep(100)
@@ -138,17 +119,16 @@ Func weiyun()
 			Exit
 		EndIf
 		
-
-		
-		
 		Local $lixian = WinGetPos("离线下载")
 		
-		#CS 		Local $color = PixelGetColor($lixian[0] + 317, $lixian[1] + 235)
-			If $color = 0xFFFFFF Then
-			TrayTip("出错啦！", "今日已到达微云离线下载添加上限，只能明天再试了！", 5, 3)
-			Terminate()
-			EndIf
-		#CE		
+		
+#CS 		Local $color = PixelGetColor($lixian[0] + 317, $lixian[1] + 235)
+   		If $color = 0xFFFFFF Then
+   			TrayTip("出错啦！", "今日已到达微云离线下载添加上限，只能明天再试了！", 5, 3)
+   			Terminate()
+   		EndIf
+#CE
+		
 		
 		MouseMove($lixian[0] + 250, $lixian[1] + 60)
 		MouseClick("")
@@ -162,7 +142,6 @@ Func weiyun()
 		MouseClick("")
 		Sleep(500)
 		MouseClick("")
-		Sleep(5000)
 
 		If WinExists("离线下载") Or WinExists("提示") Then
 			WinClose("离线下载")
